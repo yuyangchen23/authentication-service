@@ -1,13 +1,14 @@
 import express from "express";
 import authRouter from "./routes/auth";
+import "dotenv/config";
 
 const app = express();
-const port = 3000;
+const port = Number(process.env.PORT) || 3000;
 
 // Global middleware
 app.use(express.json());
 
-//Mount Root Router
+//Mount authentication routes
 app.use('/auth', authRouter);
 
 app.get('/', (req, res) => {
@@ -20,7 +21,14 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Add 404 Handler
+app.use((req, res) => {
+  return res.status(404).json({
+    success: false,
+    message: `Route ${req.method} ${req.originalUrl} was not found`
+  });
+});
 
 app.listen(port, () => {
-  console.log("Server is running...")
+  console.log(`Server is running at http://localhost:${port}`)
 });
