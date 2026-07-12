@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import { users, findUserByEmail, createUser, verifyUserCredentials } from "../services/authService";
+import { RegisterRequestBody } from "../types/auth";
 
-export const register = (req: Request, res: Response) => {
-  const {email, password} = req.body;
+export const register = (
+  req: Request<{}, {}, RegisterRequestBody>, 
+  res: Response
+) => {
+  const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({
