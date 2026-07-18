@@ -1,4 +1,5 @@
 import { AppError } from "../errors/AppError";
+import { v4 as uuidv4 } from "uuid";
 import { User, PublicUser } from "../types/user";
 import { isValidEmailFormat, isValidPassword } from "../utils/utils";
 
@@ -18,7 +19,7 @@ export const createUser = (email: string, password: string) => {
   }
 
   const newUser: User = {
-    id: users.length + 1,
+    id: uuidv4(),
     email,
     password,
   };
@@ -42,6 +43,10 @@ export const verifyUserCredentials = (email: string, password: string) => {
 
   return user.password === password;
 };
+
+export const clearUsers = (): void => {
+  users.length = 0;
+}
 
 // business logic used by controller
 export const registerUser = (email: unknown, password: unknown) => {

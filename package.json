@@ -7,7 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
@@ -15,10 +17,14 @@
   "description": "",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
     "tsx": "^4.23.0"
   }
 }

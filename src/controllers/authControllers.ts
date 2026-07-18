@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
-import { users, findUserByEmail, createUser, verifyUserCredentials, registerUser, loginUser } from "../services/authService";
+import { users, registerUser, loginUser, clearUsers } from "../services/authService";
 import { RegisterRequestBody } from "../types/auth";
-import { isValidEmailFormat, isValidPassword } from "../utils/utils";
-import { AppError } from "../errors/AppError";
 
 export const register = (
   req: Request<{}, {}, RegisterRequestBody>, 
@@ -29,6 +27,16 @@ export const login = (req: Request, res: Response) => {
     }
   });
 };
+
+// development-only
+export const deleteUsers = (req: Request, res: Response) => {
+  clearUsers();
+
+  return res.status(200).json({
+    success: true,
+    message: "All temporary users were removed"
+  });
+}
 
 export const userlist = (req: Request, res: Response) => {
   return res.status(200).json({

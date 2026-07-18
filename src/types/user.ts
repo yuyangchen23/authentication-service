@@ -1,10 +1,10 @@
 export interface User {
-  id: number;
+  id: string;
   email: string;
   password: string;
 }
 
 export interface PublicUser {
-  id: number;
+  id: string;
   email: string;
 }
