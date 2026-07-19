@@ -1,41 +1,45 @@
 import { AppError } from "../errors/AppError";
-import { v4 as uuidv4 } from "uuid";
-import { User, PublicUser } from "../types/user";
 import { isValidEmailFormat, isValidPassword } from "../utils/utils";
+import { prisma } from "../lib/prisma";
+import { Prisma } from "../generated/prisma/client";
 
-export const users: User[] = [];
-
-export const findUserByEmail = (email: string) => {
-  for (const user of users) {
-    if (user.email === email) {
-      return user;
+export const findUserByEmail = async (email: string) => {
+  return prisma.user.findUnique({
+    where: {
+      email
     }
+  });
+};
+
+export const createUser = async (email: string, password: string) => {
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password,
+      },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+      },
+    });
+
+    return user;
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      throw new AppError(409, "A user with this email already exists");
+    }
+
+    throw error;
   }
 };
 
-export const createUser = (email: string, password: string) => {
-  if (findUserByEmail(email)) {
-    return null;
-  }
-
-  const newUser: User = {
-    id: uuidv4(),
-    email,
-    password,
-  };
-
-  users.push(newUser);
-
-  const publicUser: PublicUser = {
-    id: newUser.id,
-    email: newUser.email,
-  };
-
-  return publicUser;
-};
-
-export const verifyUserCredentials = (email: string, password: string) => {
-  const user = findUserByEmail(email);
+export const verifyUserCredentials = async (email: string, password: string) => {
+  const user = await findUserByEmail(email);
 
   if (!user) {
     return false;
@@ -44,12 +48,16 @@ export const verifyUserCredentials = (email: string, password: string) => {
   return user.password === password;
 };
 
-export const clearUsers = (): void => {
-  users.length = 0;
+export const clearUsers = async () => {
+  if (process.env.NODE_ENV !== "development") {
+    throw new AppError(404, "Route not found")
+  }
+
+  await prisma.user.deleteMany();
 }
 
 // business logic used by controller
-export const registerUser = (email: unknown, password: unknown) => {
+export const registerUser = async (email: unknown, password: unknown) => {
   if (typeof email !== "string" || typeof password !== "string") {
     throw new AppError(400, "Email and password are required");
   }
@@ -64,22 +72,18 @@ export const registerUser = (email: unknown, password: unknown) => {
     throw new AppError(400, "Password must contain at least 8 characters");
   }
 
-  if (findUserByEmail(normalizedEmail)) {
-    throw new AppError(409, "A user with this email already exists");
-  }
-
   return createUser(normalizedEmail, password);
 };
 
 // login user business logic
-export const loginUser = (email: string, password: string) => {
+export const loginUser = async (email: string, password: string) => {
   if (!email || !password) {
     throw new AppError(401, "email and password are required");
   }
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
-  if (!user || !verifyUserCredentials(email, password)) {
+  if (!user || !(await verifyUserCredentials(email, password))) {
     throw new AppError(401, "Invalid email or password");
   }
 
