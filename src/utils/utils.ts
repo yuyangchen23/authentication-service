@@ -1,4 +1,3 @@
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function isValidEmailFormat(email: unknown): email is string {

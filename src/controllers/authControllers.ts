@@ -24,7 +24,9 @@ export const login = async (req: Request, res: Response) => {
     message: "Login endpoint reached",
     data: {
       id: user.id,
-      email: user.email
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
     }
   });
 };
