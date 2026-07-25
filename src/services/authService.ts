@@ -7,8 +7,8 @@ import { hashPassword, verifyPassword } from "../utils/password";
 export const findUserByEmail = async (email: string) => {
   return prisma.user.findUnique({
     where: {
-      email
-    }
+      email,
+    },
   });
 };
 
@@ -23,7 +23,7 @@ export const createUser = async (email: string, passwordHash: string) => {
         id: true,
         email: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
       },
     });
 
@@ -52,17 +52,26 @@ export const createUser = async (email: string, passwordHash: string) => {
 
 export const clearUsers = async () => {
   if (process.env.NODE_ENV !== "development") {
-    throw new AppError(404, "Route not found")
+    throw new AppError(404, "Route not found");
   }
 
   await prisma.user.deleteMany();
-}
+};
 
 // business logic used by controller
 export const registerUser = async (email: unknown, password: unknown) => {
-  if (typeof email !== "string" || typeof password !== "string") {
-    throw new AppError(400, "Email and password are required");
+  if (typeof email !== "string") {
+    throw new AppError(400, "Email is required");
   }
+
+  if (
+    typeof password !== "string" ||
+    password.length < 10 ||
+    password.length > 128 ||
+    password.trim().length < 0
+  ) {
+    throw new AppError(400, "Password must contain between 10 and 128 characters")
+  };
 
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -101,6 +110,6 @@ export const loginUser = async (email: string, password: string) => {
     id: user.id,
     email: user.email,
     createdAt: user.createdAt,
-    updatedAt: user.updatedAt
-  }
+    updatedAt: user.updatedAt,
+  };
 };
