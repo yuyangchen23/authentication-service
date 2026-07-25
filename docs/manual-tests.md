@@ -1,16 +1,135 @@
-# Manual API Tests
+# Manual Tests
 
 Base URL: `http://localhost:3000`
 
-Start the server before running these:
+These checks assume local development uses Docker Postgres on host port `5433`.
+
+## 1. Environment File
+
+Check `.env` has a database URL that matches `compose.yaml`:
+
+```env
+DATABASE_URL="postgresql://auth-user:auth_password@localhost:5433/authentication?schema=public"
+PORT=3000
+NODE_ENV=development
+```
+
+Expected result:
+
+- `DATABASE_URL` starts with `postgresql://`
+- host port is `5433`
+- database name is `authentication`
+- user/password match `compose.yaml`
+
+## 2. Database Container Starts
+
+Start Postgres:
+
+```sh
+docker compose up -d
+```
+
+Check status:
+
+```sh
+docker compose ps
+```
+
+Expected result:
+
+- service `postgres` is `Up`
+- container name is `authentication-postgres`
+- ports include `5433->5432`
+
+Example:
+
+```txt
+authentication-postgres   postgres:17   Up   0.0.0.0:5433->5432/tcp
+```
+
+## 3. Prisma Schema Validates
+
+Request:
+
+```sh
+npx prisma validate
+```
+
+Expected result:
+
+```txt
+The schema at prisma/schema.prisma is valid
+```
+
+## 4. Migration Applies
+
+Run migrations:
+
+```sh
+npx prisma migrate dev
+```
+
+Expected result:
+
+- Prisma connects to database `authentication`
+- migrations apply successfully
+- Prisma Client is generated
+
+Check migration status:
+
+```sh
+npx prisma migrate status
+```
+
+Expected result:
+
+```txt
+Database schema is up to date
+```
+
+## 5. Typecheck
+
+Request:
+
+```sh
+npm run typecheck
+```
+
+Expected result:
+
+- exits successfully
+- no TypeScript errors
+
+## 6. Production Build
+
+Request:
+
+```sh
+npm run build
+```
+
+Expected result:
+
+- exits successfully
+- compiled files are created in `dist`
+
+## 7. Development Server Starts
+
+Start the API:
 
 ```sh
 npm run dev
 ```
 
-The `id` values in responses are generated UUIDs, so they will be different each time.
+Expected result:
 
-## 1. Health Check
+```txt
+Server is running at http://localhost:3000
+```
+
+Keep this process running while testing the API endpoints below.
+
+## 8. Health Check
 
 Request:
 
@@ -28,7 +147,7 @@ Expected response:
 }
 ```
 
-## 2. Register User
+## 9. Register User
 
 Request:
 
@@ -48,14 +167,15 @@ Expected response:
   "message": "User registered successfully",
   "data": {
     "id": "generated-user-id",
-    "email": "test@example.com"
+    "email": "test@example.com",
+    "createdAt": "generated-timestamp"
   }
 }
 ```
 
-## 3. Register Duplicate Email
+## 10. Register Duplicate Email
 
-Request:
+Run the same request again:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/register \
@@ -74,53 +194,7 @@ Expected response:
 }
 ```
 
-## 4. Register Email With Uppercase Letters
-
-Request:
-
-```sh
-curl -i -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"Test@example.com","password":"password123"}'
-```
-
-Expected status: `201`
-
-Expected response:
-
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "id": "generated-user-id",
-    "email": "test@example.com"
-  }
-}
-```
-
-## 5. Register Duplicate User
-
-Run the same register request again:
-
-```sh
-curl -i -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-```
-
-Expected status: `409`
-
-Expected response:
-
-```json
-{
-  "success": false,
-  "message": "A user with this email already exists"
-}
-```
-
-## 6. Register Invalid Email
+## 11. Register Invalid Email
 
 Request:
 
@@ -141,14 +215,14 @@ Expected response:
 }
 ```
 
-## 7. Register Missing Email
+## 12. Register Missing Fields
 
 Request:
 
 ```sh
 curl -i -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"","password":"password123"}'
+  -d '{}'
 ```
 
 Expected status: `400`
@@ -158,11 +232,11 @@ Expected response:
 ```json
 {
   "success": false,
-  "message": "Email must be a valid email address"
+  "message": "Email and password are required"
 }
 ```
 
-## 8. Register Short Password
+## 13. Register Short Password
 
 Request:
 
@@ -183,7 +257,7 @@ Expected response:
 }
 ```
 
-## 9. Login User
+## 14. Login User
 
 Use an email and password that were registered successfully.
 
@@ -210,7 +284,7 @@ Expected response:
 }
 ```
 
-## 10. Login Invalid Credentials
+## 15. Login Invalid Credentials
 
 Request:
 
@@ -231,7 +305,7 @@ Expected response:
 }
 ```
 
-## 11. List Users
+## 16. List Users
 
 Request:
 
@@ -248,13 +322,17 @@ Expected response:
   "users": [
     {
       "id": "generated-user-id",
-      "email": "test@example.com"
+      "email": "test@example.com",
+      "createdAt": "generated-timestamp",
+      "updatedAt": "generated-timestamp"
     }
   ]
 }
 ```
 
-## 12. Delete Temporary Users
+## 17. Delete Development Users
+
+This endpoint is development-only.
 
 Request:
 
@@ -262,7 +340,7 @@ Request:
 curl -i -X DELETE http://localhost:3000/auth/users
 ```
 
-Expected status: `200`
+Expected status in development: `200`
 
 Expected response:
 
@@ -289,7 +367,7 @@ Expected response:
 }
 ```
 
-## 13. Unknown Route
+## 18. Unknown Route
 
 Request:
 
@@ -305,5 +383,53 @@ Expected response:
 {
   "success": false,
   "message": "Route GET /does-not-exist was not found"
+}
+```
+
+## 19. Production Server Smoke Test
+
+Stop the development server, then build and start the compiled app with production mode:
+
+```sh
+npm run build
+NODE_ENV=production npm start
+```
+
+Expected result:
+
+```txt
+Server is running at http://localhost:3000
+```
+
+Check health:
+
+```sh
+curl -i http://localhost:3000/health
+```
+
+Expected status: `200`
+
+Expected response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+Check the development-only delete endpoint is not available when `NODE_ENV` is not `development`:
+
+```sh
+curl -i -X DELETE http://localhost:3000/auth/users
+```
+
+Expected status: `404`
+
+Expected response:
+
+```json
+{
+  "success": false,
+  "message": "Route not found"
 }
 ```
