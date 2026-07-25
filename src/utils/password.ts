@@ -11,3 +11,4 @@ export const verifyPassword =
   async (password: string, passwordHash: string) : Promise<boolean> => {
     return bcrypt.compare(password, passwordHash);
 }
+

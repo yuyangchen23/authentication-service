@@ -1,5 +1,5 @@
 const port = Number(process.env.PORT) || 3000;
-const bcryptRounds = Number(process.env.BCRYPT_ROUNDS);
+const bcryptRounds = Number(process.env.BCRYPT_ROUNDS) || 12;
 
 if (!Number.isInteger(bcryptRounds) || bcryptRounds < 10) {
   throw new Error("Invalid BCRYPT_ROUNDS");
