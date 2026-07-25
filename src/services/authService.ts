@@ -2,26 +2,28 @@ import { AppError } from "../errors/AppError";
 import { isValidEmailFormat, isValidPassword } from "../utils/utils";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "../generated/prisma/client";
+import { hashPassword, verifyPassword } from "../utils/password";
 
 export const findUserByEmail = async (email: string) => {
   return prisma.user.findUnique({
     where: {
-      email
-    }
+      email,
+    },
   });
 };
 
-export const createUser = async (email: string, password: string) => {
+export const createUser = async (email: string, passwordHash: string) => {
   try {
     const user = await prisma.user.create({
       data: {
         email,
-        password,
+        passwordHash,
       },
       select: {
         id: true,
         email: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -38,29 +40,38 @@ export const createUser = async (email: string, password: string) => {
   }
 };
 
-export const verifyUserCredentials = async (email: string, password: string) => {
-  const user = await findUserByEmail(email);
+// export const verifyUserCredentials = async (email: string, password: string) => {
+//   const user = await findUserByEmail(email);
 
-  if (!user) {
-    return false;
-  }
+//   if (!user) {
+//     return false;
+//   }
 
-  return user.password === password;
-};
+//   return verifyPassword(password, user.passwordHash);
+// };
 
 export const clearUsers = async () => {
   if (process.env.NODE_ENV !== "development") {
-    throw new AppError(404, "Route not found")
+    throw new AppError(404, "Route not found");
   }
 
   await prisma.user.deleteMany();
-}
+};
 
 // business logic used by controller
 export const registerUser = async (email: unknown, password: unknown) => {
-  if (typeof email !== "string" || typeof password !== "string") {
-    throw new AppError(400, "Email and password are required");
+  if (typeof email !== "string") {
+    throw new AppError(400, "Email is required");
   }
+
+  if (
+    typeof password !== "string" ||
+    password.length < 10 ||
+    password.length > 128 ||
+    password.trim().length < 0
+  ) {
+    throw new AppError(400, "Password must contain between 10 and 128 characters")
+  };
 
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -72,7 +83,9 @@ export const registerUser = async (email: unknown, password: unknown) => {
     throw new AppError(400, "Password must contain at least 8 characters");
   }
 
-  return createUser(normalizedEmail, password);
+  const hashedPassword = await hashPassword(password);
+
+  return createUser(normalizedEmail, hashedPassword);
 };
 
 // login user business logic
@@ -83,12 +96,20 @@ export const loginUser = async (email: string, password: string) => {
 
   const user = await findUserByEmail(email);
 
-  if (!user || !(await verifyUserCredentials(email, password))) {
+  if (!user) {
+    throw new AppError(401, "Invalid email or password");
+  }
+
+  const passwordMatches = await verifyPassword(password, user.passwordHash);
+
+  if (!passwordMatches) {
     throw new AppError(401, "Invalid email or password");
   }
 
   return {
     id: user.id,
-    email: user.email
-  }
+    email: user.email,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
 };
