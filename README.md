@@ -22,9 +22,17 @@ POST /auth/register
 POST /auth/login
 GET /auth/users
 
+## Password security
+
+- Passwords are hashed using bcrypt before being written to PostgreSQL.
+- The API never returns password hashes in user responses.
+- Login uses bcrypt comparison rather than plain-text password comparison.
+
 ## Current limitations
 
-- Data disappears when the server restarts
-- Passwords are not hashed yet
-- There is no database
-- There are no authentication tokens
+- JWT authentication has not been implemented
+- Login does not yet issue access tokens
+- Email verification is not implemented
+- Password reset is not implemented
+- Rate limiting is not implemented
+
