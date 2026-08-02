@@ -58,6 +58,21 @@ export const clearUsers = async () => {
   await prisma.user.deleteMany();
 };
 
+// Use for userRoutes
+export const findUserById = async(id: string) => {
+  return prisma.user.findUnique({
+    where: {
+      id,
+    },
+    select: {
+      id: true,
+      email: true,
+      createdAt: true,
+      updatedAt: true
+    },
+  });
+};
+
 // business logic used by controller
 export const registerUser = async (email: unknown, password: unknown) => {
   if (typeof email !== "string") {
@@ -70,8 +85,11 @@ export const registerUser = async (email: unknown, password: unknown) => {
     password.length > 128 ||
     password.trim().length < 0
   ) {
-    throw new AppError(400, "Password must contain between 10 and 128 characters")
-  };
+    throw new AppError(
+      400,
+      "Password must contain between 10 and 128 characters",
+    );
+  }
 
   const normalizedEmail = email.trim().toLowerCase();
 

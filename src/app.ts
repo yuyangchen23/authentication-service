@@ -1,5 +1,6 @@
 import express from "express";
 import authRouter from "./routes/auth";
+import userRouter from "./routes/userRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -9,6 +10,7 @@ app.use(express.json());
 
 // Mount authentication routes
 app.use('/auth', authRouter);
+app.use('/users', userRouter);
 
 // Application routes
 app.get('/', (req, res) => {
