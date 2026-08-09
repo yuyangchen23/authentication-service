@@ -4,6 +4,7 @@ import { RegisterRequestBody } from "../types/auth";
 import { prisma } from "../lib/prisma";
 import { signAccessToken } from "../utils/token";
 import { AppError } from "../errors/AppError";
+import { createSession } from "../services/sessionService";
 
 export const register = async (
   req: Request<{}, {}, RegisterRequestBody>,
@@ -22,6 +23,7 @@ export const login = async (req: Request, res: Response) => {
   const user = await loginUser(req.body.email, req.body.password);
   
   const accessToken = signAccessToken(user.id);
+  const refreshToken = await createSession(user.id);
 
   return res.status(200).json({
     success: true,
@@ -33,7 +35,8 @@ export const login = async (req: Request, res: Response) => {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
-      accessToken
+      accessToken,
+      refreshToken
     },
   });
 };
@@ -97,3 +100,8 @@ export const getCurrentUser = async(req: Request, res: Response) => {
     },
   });
 };
+
+// Session controller
+export const refresh = async(req: Request, res: Response) => {
+  
+}
