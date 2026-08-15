@@ -44,5 +44,4 @@ describe("Authentication integration", () => {
 
     expect(loginRes.body.data.accessToken).toEqual(expect.any(String));
   });
-  
 });

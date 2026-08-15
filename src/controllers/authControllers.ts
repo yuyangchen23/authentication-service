@@ -94,7 +94,7 @@ export const getCurrentUser = async(req: Request, res: Response) => {
 
 // Session controller
 export const refresh = async(req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  const { refreshToken } = req.body ?? {};
 
   if (typeof refreshToken !== "string" || !refreshToken) {
     throw new AppError(
@@ -118,7 +118,7 @@ export const refresh = async(req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  const { refreshToken } = req.body ?? {};
 
   if (typeof refreshToken !== "string" || !refreshToken) {
     throw new AppError(
@@ -136,7 +136,7 @@ export const logout = async (req: Request, res: Response) => {
 };
 
 export const logoutAll = async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
+  const { refreshToken } = req.body ?? {};
 
   if (typeof refreshToken !== "string" || !refreshToken) {
     throw new AppError(
