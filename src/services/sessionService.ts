@@ -2,6 +2,7 @@ import { generateRefreshToken, hashRefreshToken } from "../utils/refreshToken";
 import { env } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../errors/AppError";
+import { Session } from "../generated/prisma/client";
 
 export const createSession = async (userId: string) => {
   const refreshToken = generateRefreshToken();
@@ -24,6 +25,18 @@ export const createSession = async (userId: string) => {
   };
 };
 
+export const revokeActiveSessions = async (session: Session) => {
+  await prisma.session.updateMany({
+    where: {
+      userId: session.userId,
+      revokedAt: null,
+    },
+    data: {
+      revokedAt: new Date(),
+    }
+  });
+};
+
 export const findSessionByRefreshToken = async (refreshToken: string) => {
   const refreshTokenHash = hashRefreshToken(refreshToken);
 
@@ -41,6 +54,10 @@ export const findSessionByRefreshToken = async (refreshToken: string) => {
   }
 
   if (session.revokedAt) {
+    if (session.replacedBySessionId) {
+      await revokeActiveSessions(session);
+    }
+    
     throw new AppError(
       401,
       "Refresh token has been revoked"
