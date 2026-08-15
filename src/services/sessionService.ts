@@ -57,7 +57,7 @@ export const findSessionByRefreshToken = async (refreshToken: string) => {
     if (session.replacedBySessionId) {
       await revokeActiveSessions(session);
     }
-    
+
     throw new AppError(
       401,
       "Refresh token has been revoked"

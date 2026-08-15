@@ -4,7 +4,7 @@ import { RegisterRequestBody } from "../types/auth";
 import { prisma } from "../lib/prisma";
 import { signAccessToken } from "../utils/token";
 import { AppError } from "../errors/AppError";
-import { createSession, rotateSession } from "../services/sessionService";
+import { createSession, findSessionByRefreshToken, revokeSession, rotateSession } from "../services/sessionService";
 
 export const register = async (
   req: Request<{}, {}, RegisterRequestBody>,
@@ -105,7 +105,7 @@ export const getCurrentUser = async(req: Request, res: Response) => {
 export const refresh = async(req: Request, res: Response) => {
   const refreshToken = req.body;
 
-  if (!refreshToken) {
+  if (typeof refreshToken !== "string" || !refreshToken) {
     throw new AppError(
       401,
       "Refresh token required"
@@ -124,4 +124,49 @@ export const refresh = async(req: Request, res: Response) => {
       refreshTokenExpiresAt: rotated.expiresAt,
     }
   });
-}
+};
+
+export const logout = async (req: Request, res: Response) => {
+  const refreshToken = req.body;
+
+  if (typeof refreshToken !== "string" || !refreshToken) {
+    throw new AppError(
+      401,
+      "Refresh token required"
+    );
+  }
+
+  await revokeSession(refreshToken);
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully"
+  });
+};
+
+export const logoutAll = async (req: Request, res: Response) => {
+  const refreshToken = req.body;
+
+  if (typeof refreshToken !== "string" || !refreshToken) {
+    throw new AppError(
+      401,
+      "Refresh token required"
+    );
+  }
+
+  const session = await findSessionByRefreshToken(refreshToken);
+  
+  await prisma.session.updateMany({
+    where: {
+      userId: session.userId,
+    },
+    data: {
+      revokedAt: new Date()
+    }
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out from all devices"
+  });
+};
