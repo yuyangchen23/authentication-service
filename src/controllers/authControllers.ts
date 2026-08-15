@@ -4,7 +4,7 @@ import { RegisterRequestBody } from "../types/auth";
 import { prisma } from "../lib/prisma";
 import { signAccessToken } from "../utils/token";
 import { AppError } from "../errors/AppError";
-import { createSession } from "../services/sessionService";
+import { createSession, rotateSession } from "../services/sessionService";
 
 export const register = async (
   req: Request<{}, {}, RegisterRequestBody>,
@@ -103,5 +103,25 @@ export const getCurrentUser = async(req: Request, res: Response) => {
 
 // Session controller
 export const refresh = async(req: Request, res: Response) => {
-  
+  const refreshToken = req.body;
+
+  if (!refreshToken) {
+    throw new AppError(
+      401,
+      "Refresh token required"
+    );
+  }
+
+  const rotated = await rotateSession(refreshToken);
+
+  const accessToken = signAccessToken(rotated.userId);
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      accessToken,
+      refreshToken: rotated.refreshToken,
+      refreshTokenExpiresAt: rotated.expiresAt,
+    }
+  });
 }

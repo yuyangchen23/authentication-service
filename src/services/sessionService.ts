@@ -67,23 +67,30 @@ export const rotateSession = async (refreshToken: string) => {
   newExpiry.setDate(newExpiry.getDate() + env.refreshTokenExpiresDays);
 
   await prisma.$transaction(async (tx) => {
+    const newSession = await tx.session.create({
+      data: {
+        userId: oldSession.userId,
+        refreshTokenHash: newTokenHash,
+        expiresAt: newExpiry,
+      }
+    });
+
     await tx.session.update({
       where: {
         id: oldSession.id
       },
       data: {
-        revokedAt: new Date()
+        revokedAt: new Date(),
+        replacedBySessionId: newSession.id,
       },
     });
-
-    await tx.session.create({
-      data: {
-        userId: oldSession.userId,
-        refreshTokenHash: newTokenHash,
-        expiresAt: newExpiry
-      }
-    });
   });
+
+  return {
+    userId: oldSession.userId,
+    refreshToken: newToken,
+    expiresAt: newExpiry,
+  };
 };
 
 export const revokeSession = async (refreshToken: string) => {
